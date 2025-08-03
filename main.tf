@@ -1,41 +1,38 @@
-data "aws_subnets" "available_subnets" {
+data "aws_subnets" "available-subnets" {
   filter {
     name   = "tag:Name"
-    values = [var.subnet_tag_filter]
+    values = ["Our-Public-*"]
   }
 }
 
-resource "aws_eks_cluster" "eks_cluster" {
+resource "aws_eks_cluster" "ashish-cluster" {
   name     = var.cluster_name
-  role_arn = aws_iam_role.eks_cluster_role.arn
+  role_arn = aws_iam_role.example.arn
 
   vpc_config {
-    subnet_ids = data.aws_subnets.available_subnets.ids
+    subnet_ids = data.aws_subnets.available-subnets.ids
   }
 
   depends_on = [
-    aws_iam_role_policy_attachment.AmazonEKSClusterPolicy,
-    aws_iam_role_policy_attachment.AmazonEKSVPCResourceController,
+    aws_iam_role_policy_attachment.example-AmazonEKSClusterPolicy,
+    aws_iam_role_policy_attachment.example-AmazonEKSVPCResourceController,
   ]
 }
 
-resource "aws_eks_node_group" "eks_nodes" {
-  cluster_name    = aws_eks_cluster.eks_cluster.name
+resource "aws_eks_node_group" "node-grp" {
+  cluster_name    = aws_eks_cluster.ashish-cluster.name
   node_group_name = "pc-node-group"
-  node_role_arn   = aws_iam_role.eks_node_role.arn
-  subnet_ids      = data.aws_subnets.available_subnets.ids
+  node_role_arn   = aws_iam_role.worker.arn
+  subnet_ids      = data.aws_subnets.available-subnets.ids
   capacity_type   = "ON_DEMAND"
   disk_size       = 20
-  instance_types  = [var.instance_type]
-
-  labels = {
-    env = "dev"
-  }
+  instance_types  = ["t2.micro"]
+  labels          = tomap({ env = "dev" })
 
   scaling_config {
-    desired_size = var.desired_size
-    max_size     = var.max_size
-    min_size     = var.min_size
+    desired_size = 2
+    max_size     = 3
+    min_size     = 1
   }
 
   update_config {
